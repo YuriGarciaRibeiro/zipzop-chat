@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: zipzop_db
+    environment:
+      POSTGRES_USER: zipzop_user
+      POSTGRES_PASSWORD: securepassword
+      POSTGRES_DB: zipzop
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d  # Executa migrations no startup
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zipzop_user -d zipzop"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zipzop_network
+
+  pgadmin:  # Opcional - Interface gráfica para administração
+    image: dpage/pgadmin4
+    container_name: zipzop_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@zipzop.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8081:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - zipzop_network
+
+volumes:
+  postgres_data:
+
+networks:
+  zipzop_network:
+    driver: bridge
