@@ -11,6 +11,7 @@ FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/zipzop .
 COPY --from=builder /app/.env .
+COPY --from=builder /app/public ./public
 
 EXPOSE ${PORT}
 CMD ["./zipzop"]
