@@ -9,10 +9,12 @@ import (
 )
 
 func Load() error {
-	if err := godotenv.Load(); err != nil {
-		return fmt.Errorf("error loading .env file: %w", err)
-	}
-	return nil
+    if os.Getenv("ENVIRONMENT") != "production" {
+        if err := godotenv.Load(); err != nil {
+            return fmt.Errorf("error loading .env file: %w", err)
+        }
+    }
+    return nil
 }
 
 func MustGet(key string) string {
