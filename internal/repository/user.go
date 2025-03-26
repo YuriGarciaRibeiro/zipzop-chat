@@ -72,6 +72,34 @@ func (r *UserRepository) CreateUser(user *models.User) error {
 	return err
 }
 
+func (r *UserRepository) GetUserByID(id string) (*models.User, error) {
+	query := `
+		SELECT id, email, phone, password_hash, salt, created_at, updated_at
+		FROM users WHERE id = $1`
+	
+	var user models.User
+	err := r.db.QueryRow(query, id).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Phone,
+		&user.PasswordHash,
+		&user.Salt,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil // Usuário não encontrado
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+
 func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	query := `
 		SELECT id, email, phone, password_hash, salt, created_at, updated_at

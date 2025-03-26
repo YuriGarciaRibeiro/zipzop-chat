@@ -22,14 +22,14 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			return
 		}
 
-		userID, err := m.authService.ValidateToken(tokenString)
+		email, err := m.authService.ValidateToken(tokenString)
 		if err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
 
 		// Adiciona o userID ao contexto da requisição
-		ctx := context.WithValue(r.Context(), "userID", userID)
+		ctx := context.WithValue(r.Context(), "email", email)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

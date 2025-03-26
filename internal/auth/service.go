@@ -86,11 +86,17 @@ func (s *AuthService) LoginUser(loginRequest *models.LoginUserRequest) (*models.
 
 // Métodos auxiliares mantidos com melhorias
 func (s *AuthService) GenerateJWT(userID string) (string, error) {
+	user, err := s.userRepo.GetUserByID(userID)
+	if err != nil {
+		return "", err
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": userID,
-		"iss": s.issuer,
-		"exp": time.Now().Add(s.expiry).Unix(),
-		"iat": time.Now().Unix(),
+		"sub":   userID,
+		"iss":   s.issuer,
+		"exp":   time.Now().Add(s.expiry).Unix(),
+		"iat":   time.Now().Unix(),
+		"email": user.Email,
 	})
 
 	return token.SignedString([]byte(s.jwtSecret))
@@ -108,8 +114,10 @@ func (s *AuthService) ValidateToken(tokenString string) (string, error) {
 		return "", err
 	}
 
+
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return claims["sub"].(string), nil
+		fmt.Println(claims)
+		return claims["email"].(string), nil
 	}
 
 	return "", fmt.Errorf("token inválido")

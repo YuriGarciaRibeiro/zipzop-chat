@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - ZipZop Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 300px;
+            margin: 50px auto;
+        }
+
+        input,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Registro</h2>
+        <input type="text" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Senha" required>
+        <input type="phone" id="phone" placeholder="Phone" required>
+        <button onclick="register()">Registrar</button>
+        <p>Já tem uma conta? <a href="login.html">Faça login</a></p>
+    </div>
+
+    <script>
+        async function register() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const phone = document.getElementById("phone").value;
+
+            const response = await fetch("http://localhost:8080/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password, phone})
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                localStorage.setItem("token", data.token);
+                alert("Registro bem-sucedido!");
+                window.location.href = "chat.html";
+            } else {
+                alert("Erro: " + data.message);
+            }
+        }
+    </script>
+</body>
+
+</html>
