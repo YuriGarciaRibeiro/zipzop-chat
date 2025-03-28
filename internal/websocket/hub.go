@@ -1,21 +1,22 @@
 package websocket
 
 import (
+	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 // Client representa um usuário conectado ao WebSocket
 type Client struct {
-    ID     string
-    email string 
-    Conn   *websocket.Conn
-    Pool   *Hub
-    Send   chan Message
+	ID    string
+	email string
+	Conn  *websocket.Conn
+	Pool  *Hub
+	Send  chan Message
 }
-
 
 // Hub gerencia todas as conexões WebSocket
 type Hub struct {
@@ -28,9 +29,10 @@ type Hub struct {
 
 // Message representa a estrutura da mensagem enviada pelo WebSocket
 type Message struct {
-	Sender  string `json:"sender"`
-	Content string `json:"content"`
-	Type    string `json:"type"` // "text", "image", etc.
+	Sender    string `json:"sender"`
+	Content   string `json:"content"`
+	Type      string `json:"type"`
+	TimeStamp string `json:"timestamp"`
 }
 
 // NewHub cria uma nova instância do Hub
@@ -92,7 +94,9 @@ func (c *Client) readPump() {
 			break
 		}
 		msg.Sender = c.email
+		msg.TimeStamp = time.Now().Format(time.RFC3339)
 		c.Pool.broadcast <- msg
+		fmt.Println("Mensagem recebida:", msg)
 	}
 }
 
@@ -103,5 +107,6 @@ func (c *Client) writePump() {
 			log.Printf("Erro ao escrever mensagem: %v", err)
 			break
 		}
+		fmt.Println("Mensagem enviada:", msg)
 	}
 }
