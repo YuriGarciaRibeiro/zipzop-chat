@@ -64,7 +64,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"token": token,
-		"user":  map[string]interface{}{"id": user.ID.String(), "email": user.Email},
+		"user":  map[string]interface{}{"id": user.ID.String(), "email": user.Email, "name": user.Name},
 	})
 }
 
