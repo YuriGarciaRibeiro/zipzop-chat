@@ -47,7 +47,10 @@ func (s *Server) SetupRoutes(
 	// Rotas públicas
 	s.router.HandleFunc("/health", healthCheck).Methods("GET")
 
-	router.ConfigureAuthRoutes(s.router, authHandler)
+	// Rotas de autenticação
+	middleware := auth.NewAuthMiddleware(authService)
+	router := router.NewRouter(s.router, middleware)
+	router.ConfigureAuthRoutes(authHandler)
 
 	// Websocket (definir ANTES do PathPrefix)
 	s.router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {

@@ -14,14 +14,32 @@ type Route struct {
 	IsAuth   bool
 }
 
-func ConfigureAuthRoutes(r *mux.Router, authHandler *auth.AuthHandler) {
-	routes := NewAuthRoutes(authHandler)
+type Router struct {
+	r          *mux.Router
+	middleware *auth.AuthMiddleware
+}
+
+func NewRouter(muxRouter *mux.Router, authMiddleware *auth.AuthMiddleware) *Router {
+	return &Router{
+		r:          muxRouter,
+		middleware: authMiddleware,
+	}
+}
+
+func (router *Router) configureRoutes(routes []Route) {
+	authSubRouter := router.r.PathPrefix("/").Subrouter() // Subrouter para rotas autenticadas
+	authSubRouter.Use(router.middleware.Handler)          // Aplica o middleware
+
 	for _, route := range routes {
 		if route.IsAuth {
-			// TODO: Implementar middleware de autenticação
-			r.HandleFunc(route.URI, route.Function).Methods(route.Method)
+			authSubRouter.HandleFunc(route.URI, route.Function).Methods(route.Method)
 		} else {
-			r.HandleFunc(route.URI, route.Function).Methods(route.Method)
+			router.r.HandleFunc(route.URI, route.Function).Methods(route.Method)
 		}
 	}
+}
+
+func (router *Router) ConfigureAuthRoutes(authHandler *auth.AuthHandler) {
+	routes := NewAuthRoutes(authHandler)
+	router.configureRoutes(routes)
 }
