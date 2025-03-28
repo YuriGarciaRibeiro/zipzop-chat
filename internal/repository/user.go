@@ -101,7 +101,7 @@ func (r *UserRepository) GetUserByID(id string) (*models.User, error) {
 
 func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	query := `
-		SELECT id, email, phone, password_hash, salt, created_at, updated_at
+		SELECT id, email, name, password_hash, salt, created_at, updated_at
 		FROM users WHERE email = $1`
 
 	var user models.User
@@ -142,7 +142,7 @@ func (r *UserRepository) GetUser(email string) (*models.User, error) {
         SELECT 
             id, 
             email, 
-            phone, 
+            name, 
             password_hash, 
             salt, 
             created_at, 
