@@ -8,7 +8,7 @@ import (
 
 	"github.com/YuriGarciaRibeiro/zipzop-chat/internal/auth"
 	"github.com/YuriGarciaRibeiro/zipzop-chat/internal/config"
-	"github.com/YuriGarciaRibeiro/zipzop-chat/internal/repository"
+	"github.com/YuriGarciaRibeiro/zipzop-chat/internal/router"
 	"github.com/YuriGarciaRibeiro/zipzop-chat/internal/websocket"
 	"github.com/gorilla/mux"
 )
@@ -40,24 +40,23 @@ func NewServer(cfg *config.AppConfig) *Server {
 }
 
 func (s *Server) SetupRoutes(
-    authService *auth.AuthService,
-    userRepo *repository.UserRepository,
+	authService *auth.AuthService,
 ) {
-    authHandler := auth.NewAuthHandler(authService)
+	authHandler := auth.NewAuthHandler(authService)
 
-    // Rotas públicas
-    s.router.HandleFunc("/health", healthCheck).Methods("GET")
-    s.router.HandleFunc("/register", authHandler.Register).Methods("POST")
-    s.router.HandleFunc("/login", authHandler.Login).Methods("POST")
+	// Rotas públicas
+	s.router.HandleFunc("/health", healthCheck).Methods("GET")
 
-    // Websocket (definir ANTES do PathPrefix)
-    s.router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-        websocket.ServeWs(s.hub, w, r, authService)
-    })
+	router.ConfigureAuthRoutes(s.router, authHandler)
 
-    // Rotas estáticas (deve ser a última)
-    s.router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("./public"))))
-    fmt.Println("Rotas configuradas corretamente")
+	// Websocket (definir ANTES do PathPrefix)
+	s.router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		websocket.ServeWs(s.hub, w, r, authService)
+	})
+
+	// Rotas estáticas (deve ser a última)
+	s.router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("./public"))))
+	fmt.Println("Rotas configuradas corretamente")
 }
 
 func (s *Server) Start() error {

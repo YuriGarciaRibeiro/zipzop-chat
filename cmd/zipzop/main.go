@@ -33,7 +33,7 @@ func main() {
 
 	// Configura servidor HTTP
 	srv := server.NewServer(cfg)
-	srv.SetupRoutes(authService, userRepo)
+	srv.SetupRoutes(authService)
 
 	// Graceful shutdown
 	done := make(chan os.Signal, 1)
