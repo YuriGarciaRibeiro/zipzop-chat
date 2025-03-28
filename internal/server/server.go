@@ -10,6 +10,7 @@ import (
 	"github.com/YuriGarciaRibeiro/zipzop-chat/internal/config"
 	"github.com/YuriGarciaRibeiro/zipzop-chat/internal/router"
 	"github.com/YuriGarciaRibeiro/zipzop-chat/internal/websocket"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -26,12 +27,19 @@ func NewServer(cfg *config.AppConfig) *Server {
 	// Inicia o gerenciador de WebSocket em uma goroutine separada
 	go hub.Start()
 
+	// Configurar CORS para permitir qualquer origem
+	corsHandler := handlers.CORS(
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+	)
+
 	return &Server{
 		router: router,
 		hub:    hub,
 		httpServer: &http.Server{
 			Addr:         ":" + cfg.Server.Port,
-			Handler:      router,
+			Handler:      corsHandler(router),
 			ReadTimeout:  cfg.Server.ReadTimeout,
 			WriteTimeout: cfg.Server.WriteTimeout,
 			IdleTimeout:  cfg.Server.IdleTimeout,

@@ -62,7 +62,7 @@ func (r *UserRepository) CreateUser(user *models.User) error {
 	_, err := r.db.Exec(query,
 		user.ID,
 		user.Email,
-		user.Phone,
+		user.Name,
 		user.PasswordHash,
 		user.Salt,
 		user.CreatedAt,
@@ -76,12 +76,12 @@ func (r *UserRepository) GetUserByID(id string) (*models.User, error) {
 	query := `
 		SELECT id, email, phone, password_hash, salt, created_at, updated_at
 		FROM users WHERE id = $1`
-	
+
 	var user models.User
 	err := r.db.QueryRow(query, id).Scan(
 		&user.ID,
 		&user.Email,
-		&user.Phone,
+		&user.Name,
 		&user.PasswordHash,
 		&user.Salt,
 		&user.CreatedAt,
@@ -99,7 +99,6 @@ func (r *UserRepository) GetUserByID(id string) (*models.User, error) {
 	return &user, nil
 }
 
-
 func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	query := `
 		SELECT id, email, phone, password_hash, salt, created_at, updated_at
@@ -109,7 +108,7 @@ func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	err := r.db.QueryRow(query, email).Scan(
 		&user.ID,
 		&user.Email,
-		&user.Phone,
+		&user.Name,
 		&user.PasswordHash,
 		&user.Salt,
 		&user.CreatedAt,
@@ -157,7 +156,7 @@ func (r *UserRepository) GetUser(email string) (*models.User, error) {
 	err := r.db.QueryRow(query, email).Scan(
 		&user.ID,
 		&user.Email,
-		&user.Phone,
+		&user.Name,
 		&user.PasswordHash,
 		&user.Salt,
 		&user.CreatedAt,

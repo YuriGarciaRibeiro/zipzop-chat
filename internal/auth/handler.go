@@ -81,7 +81,7 @@ func mapRegisterRequestToUser(req model.RegisterUserRequest) (*model.User, error
 	return &model.User{
 		ID:           uuid.New(),
 		Email:        req.Email,
-		Phone:        &req.Phone,
+		Name:         req.Name,
 		PasswordHash: string(hashedPassword),
 		Salt:         salt,
 		CreatedAt:    time.Now().UTC(),
