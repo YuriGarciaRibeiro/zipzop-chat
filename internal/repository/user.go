@@ -56,7 +56,7 @@ func (r *UserRepository) Close() error {
 
 func (r *UserRepository) CreateUser(user *models.User) error {
 	query := `
-		INSERT INTO users (id, email, phone, password_hash, salt, created_at, updated_at)
+		INSERT INTO users (id, email, name, password_hash, salt, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)`
 
 	_, err := r.db.Exec(query,
@@ -74,7 +74,7 @@ func (r *UserRepository) CreateUser(user *models.User) error {
 
 func (r *UserRepository) GetUserByID(id string) (*models.User, error) {
 	query := `
-		SELECT id, email, phone, password_hash, salt, created_at, updated_at
+		SELECT id, email, name, password_hash, salt, created_at, updated_at
 		FROM users WHERE id = $1`
 
 	var user models.User
