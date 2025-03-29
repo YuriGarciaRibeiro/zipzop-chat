@@ -42,7 +42,7 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, authService *auth
 		Pool:  hub,
 		Send:  make(chan Message, 256),
 	}
-
+	
 	hub.register <- client
 
 	go client.readPump()

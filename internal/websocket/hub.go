@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"html"
 	"log"
 	"sync"
 	"time"
@@ -108,7 +109,8 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-
+		
+		msg.Content = html.EscapeString(msg.Content)
 		msg.ID = uuid.New().String()
 		msg.Sender = c.Email
 		msg.Timestamp = time.Now().UTC().Format(time.RFC3339)
