@@ -1,41 +1,39 @@
 package websocket
 
 import (
-	"fmt"
 	"log"
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
-// Client representa um usuário conectado ao WebSocket
+type Message struct {
+	ID        string `json:"id"`
+	Sender    string `json:"sender"`
+	Content   string `json:"content"`
+	Type      string `json:"type"`
+	Timestamp string `json:"timestamp"`
+}
+
 type Client struct {
 	ID    string
-	email string
+	Email string
 	Conn  *websocket.Conn
 	Pool  *Hub
 	Send  chan Message
+	mu    sync.Mutex
 }
 
-// Hub gerencia todas as conexões WebSocket
 type Hub struct {
 	clients    map[*Client]bool
 	broadcast  chan Message
 	register   chan *Client
 	unregister chan *Client
-	mu         sync.Mutex
+	mu         sync.RWMutex
 }
 
-// Message representa a estrutura da mensagem enviada pelo WebSocket
-type Message struct {
-	Sender    string `json:"sender"`
-	Content   string `json:"content"`
-	Type      string `json:"type"`
-	TimeStamp string `json:"timestamp"`
-}
-
-// NewHub cria uma nova instância do Hub
 func NewHub() *Hub {
 	return &Hub{
 		clients:    make(map[*Client]bool),
@@ -45,7 +43,13 @@ func NewHub() *Hub {
 	}
 }
 
-// Start inicializa o loop do Hub para gerenciar conexões e mensagens
+const (
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
+	maxMessageSize = 512
+)
+
 func (h *Hub) Start() {
 	for {
 		select {
@@ -53,7 +57,7 @@ func (h *Hub) Start() {
 			h.mu.Lock()
 			h.clients[client] = true
 			h.mu.Unlock()
-			log.Printf("Cliente %s conectado", client.ID)
+			log.Printf("Cliente conectado: %s (%s)", client.Email, client.ID)
 
 		case client := <-h.unregister:
 			h.mu.Lock()
@@ -61,52 +65,85 @@ func (h *Hub) Start() {
 				delete(h.clients, client)
 				close(client.Send)
 				client.Conn.Close()
-				log.Printf("Cliente %s desconectado", client.ID)
+				log.Printf("Cliente desconectado: %s (%s)", client.Email, client.ID)
 			}
 			h.mu.Unlock()
 
 		case message := <-h.broadcast:
-			h.mu.Lock()
+			h.mu.RLock()
 			for client := range h.clients {
+				client.mu.Lock()
 				select {
 				case client.Send <- message:
 				default:
 					close(client.Send)
 					delete(h.clients, client)
 				}
+				client.mu.Unlock()
 			}
-			h.mu.Unlock()
+			h.mu.RUnlock()
 		}
 	}
 }
 
-// readPump lê mensagens do cliente e as envia para o hub
 func (c *Client) readPump() {
 	defer func() {
 		c.Pool.unregister <- c
 		c.Conn.Close()
 	}()
+
+	c.Conn.SetReadLimit(maxMessageSize)
+	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
 	for {
 		var msg Message
 		err := c.Conn.ReadJSON(&msg)
 		if err != nil {
-			log.Printf("Erro ao ler mensagem: %v", err)
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("Erro na leitura: %v", err)
+			}
 			break
 		}
-		msg.Sender = c.email
-		msg.TimeStamp = time.Now().Format(time.RFC3339)
+
+		msg.ID = uuid.New().String()
+		msg.Sender = c.Email
+		msg.Timestamp = time.Now().UTC().Format(time.RFC3339)
+		msg.Type = "text"
+
 		c.Pool.broadcast <- msg
-		fmt.Println("Mensagem recebida:", msg)
 	}
 }
 
-// writePump envia mensagens do hub para o cliente
 func (c *Client) writePump() {
-	for msg := range c.Send {
-		if err := c.Conn.WriteJSON(msg); err != nil {
-			log.Printf("Erro ao escrever mensagem: %v", err)
-			break
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.Conn.Close()
+	}()
+
+	for {
+		select {
+		case message, ok := <-c.Send:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			if err := c.Conn.WriteJSON(message); err != nil {
+				log.Printf("Erro na escrita: %v", err)
+				return
+			}
+
+		case <-ticker.C:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
 		}
-		fmt.Println("Mensagem enviada:", msg)
 	}
 }
